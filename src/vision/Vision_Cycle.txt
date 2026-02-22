@@ -1,0 +1,12 @@
+runs at 5 times/second
+detects faces (YuNet)
+recognizes faces (SFace)
+applies a stability gate (prevents flapping)
+computes trust_level from a trust_map.json
+tracks last_seen timestamps per identity
+emits one JSON line per tick (easy to pipe into your thread manager / logger)
+
+- Trust Map Rules used:
+If recognized name is in this file → use its trust level
+If recognized but not present in trust_map → defaults to "Guest"
+If not recognized / below threshold → "UNKNOWN"

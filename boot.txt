@@ -1,0 +1,43 @@
+- Hostname :
+botronka
+- password:
+ybpi
+- Raspberry pi ssh public key
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIME6+EM5L+4bRR3xJtkwhyAp21GUrPzYVY8dEGcCLPQB raspberrypi
+
+- access ssh
+ssh botronka@botronka.local
+ssh botronka@192.168.2.30
+
+cd ~/botfriend
+
+
+vision/ (camera, face/object recognition)
+audio/ (wake word, STT, TTS)
+control/ (movement, motor driver)
+sensors/ (ultrasonic, IMU if you add one)
+core/ (command router, trust levels, safety rules)
+
+
+
+1) Basic interactions to implement now (v0)
+- Inputs
+Camera: face detected / not detected (later: known vs unknown)
+Ultrasonic: distance in front
+Internal health: exceptions, timeouts, low FPS, sensor failures
+- Core states (emotions)
+GREETING → face appears after being absent
+HAPPY → everything normal (no obstacle, no error)
+SUSPICIOUS → face detected but unknown (v0 = “any face” can be unknown until you add recognition)
+LONELY → no face detected for X seconds
+STUCK → obstacle too close for > X seconds (or later: all directions blocked)
+ANGRY → error in a module (camera fail, OLED fail, sensor fail)
+CURIOUS → object/face detected but confidence low
+SLEEPY → idle too long
+ALERT → distance suddenly drops (someone approaches fast)
+- Buzzer notification events
+STUCK_START (short triple beep)
+ERROR (long + long)
+NEW_FACE (single chirp)
+TOO_CLOSE (fast beeps)
+LOW_BATTERY, WAKE_WORD, TRUST_DENIED, TRUST_GRANTED

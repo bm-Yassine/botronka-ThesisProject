@@ -1,0 +1,35 @@
+oled:
+  i2c_bus: 1
+  address: 0x3C
+  width: 128
+  height: 64
+
+buzzer:
+  pin: 17
+
+ultrasonic:
+  trigger_pin: 24
+  echo_pin: 23
+
+camera:
+  width: 640
+  height: 480
+  fps: 10
+
+vision:
+  width: 640
+  height: 480
+  recognition_fps: 5
+  match_threshold: 0.60
+  stable_k: 3
+  stable_window: 5
+  default_known_trust: Guest
+  detector_score_threshold: 0.80
+  detector_nms_threshold: 0.30
+  reload_every_s: 2.0
+
+behavior:
+  lonely_after_s: 12
+  stuck_distance_cm: 18
+  stuck_after_s: 2.5
+  face_check_hz: 4
