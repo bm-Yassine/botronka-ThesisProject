@@ -4,6 +4,7 @@ import queue
 import logging
 import json
 import time
+import threading
 from typing import Optional
 
 from src.threads.baseThread import BaseThread
@@ -50,9 +51,15 @@ class DisplayThread(BaseThread):
         self.seconds_since_owner_seen: Optional[float] = None
         self.last_seen_by_name: dict[str, float] = {}
         self.stuck_since = None
+        self.mic_is_on = False
+        self._update_event = threading.Event()
+        self._last_render_key: tuple | None = None
 
     def run(self):
         while self.running:
+            self._update_event.wait(timeout=0.5)
+            self._update_event.clear()
+
             now = time.monotonic()
             emotion = self.decide_emotion(now)
 
@@ -63,6 +70,15 @@ class DisplayThread(BaseThread):
                 subtitle_parts.append(self.last_seen_name)
                 subtitle_parts.append(self.trust.name)
             subtitle = " ".join(subtitle_parts)
+
+            render_key = (
+                emotion,
+                subtitle,
+                self.mic_is_on,
+            )
+            if render_key == self._last_render_key:
+                continue
+            self._last_render_key = render_key
 
             logging.debug(
                 "Display emotion=%s face=%s name=%s trust=%s dist=%s",
@@ -75,17 +91,18 @@ class DisplayThread(BaseThread):
             self.display.draw(
                 emotion,
                 subtitle,
+                mic_on=self.mic_is_on,
             )
 
             # Track edge for GREETING decision
             self.face_present = self.face_detected
-            time.sleep(0.2)
 
     def handle_message(self, message: Message):
         if message.type == "distance_cm":
             try:
                 data = json.loads(message.content)
                 self.distance_cm = data.get("value")
+                self._update_event.set()
             except json.JSONDecodeError:
                 logging.error(
                     "Failed to decode distance_cm message: %s", message.content
@@ -118,6 +135,8 @@ class DisplayThread(BaseThread):
                 if self.face_detected:
                     self.last_face_ts = time.monotonic()
 
+                self._update_event.set()
+
                 logging.info(
                     "Vision->Display identity: name=%s trust=%s similarity=%.3f "
                     "last_seen_ts=%s since_last_seen=%s owner_last_seen_ts=%s owner_seen_delta=%s",
@@ -134,6 +153,33 @@ class DisplayThread(BaseThread):
         elif message.type == "vision_error":
             self.recognition_error = True
             logging.error("Vision error message: %s", message.content)
+            self._update_event.set()
+        elif message.type == "audio_listening_started":
+            self.mic_is_on = True
+            self._update_event.set()
+        elif message.type == "audio_wake_detected":
+            # Visual acknowledgement: wake phrase accepted, mic opening.
+            self.mic_is_on = True
+            self._update_event.set()
+        elif message.type in {"audio_listening_finished", "tts_started"}:
+            self.mic_is_on = False
+            self._update_event.set()
+        elif message.type == "motion_state":
+            try:
+                moving = bool(json.loads(message.content).get("moving", False))
+                if moving:
+                    self.mic_is_on = False
+                    self._update_event.set()
+            except Exception:
+                pass
+        elif message.type == "buzzer_state":
+            try:
+                active = bool(json.loads(message.content).get("active", False))
+                if active:
+                    self.mic_is_on = False
+                    self._update_event.set()
+            except Exception:
+                pass
 
     def decide_emotion(self, now: float) -> Emotion:
         if self.recognition_error:

@@ -3,12 +3,18 @@ import logging
 
 from src.threads.baseThread import BaseThread
 from src.core.message import Message
+from src.core.state import RuntimeStateStore
 
 
 class ThreadManager:
-    def __init__(self, queue: queue.Queue[Message]):
+    def __init__(
+        self,
+        queue: queue.Queue[Message],
+        state_store: RuntimeStateStore | None = None,
+    ):
         self.threads: dict[str, BaseThread] = {}
         self.queue = queue
+        self.state_store = state_store
         self.running = False
 
     def add_thread(self, thread: BaseThread):
@@ -16,6 +22,8 @@ class ThreadManager:
 
     def broadcast_message(self, msg: Message):
         logging.debug("Broadcasting message to all threads: %s", msg)
+        if self.state_store is not None:
+            self.state_store.apply_message(msg)
         for thread in self.threads.values():
             thread.handle_message(msg)
 

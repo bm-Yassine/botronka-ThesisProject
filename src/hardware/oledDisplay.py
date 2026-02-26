@@ -32,7 +32,7 @@ class OledDisplay:
 
         self.font = ImageFont.load_default()
 
-    def draw(self, emotion: Emotion, subtitle: str = ""):
+    def draw(self, emotion: Emotion, subtitle: str = "", mic_on: bool | None = None):
         img = Image.new("1", (self.width, self.height))
         draw = ImageDraw.Draw(img)
 
@@ -42,16 +42,18 @@ class OledDisplay:
             Emotion.SUSPICIOUS: "(o_O)",
             Emotion.LONELY: "(._.)",
             Emotion.STUCK: "(>_<)",
-            Emotion.ANGRY: "(ಠ_ಠ)",
-            Emotion.CURIOUS: "(?_?)",
+            Emotion.ANGRY: "(!)",
             Emotion.SLEEPY: "(-_-) zZ",
-            Emotion.ALERT: "(!)",
+            #Emotion.CURIOUS: "(?_?)"
+            #Emotion.ALERT: "(ಠ_ಠ)", #swapped alert and angry because angry is now for alerts
         }.get(emotion, ":-)")
 
         draw.text((0, 0), f"{emotion.name}", font=self.font, fill=255)
         draw.text((0, 18), big, font=self.font, fill=255)
         if subtitle:
             draw.text((0, 45), subtitle[:20], font=self.font, fill=255)
+        if mic_on is not None:
+            draw.text((0, 54), f"MIC: {'ON' if mic_on else 'OFF'}", font=self.font, fill=255)
 
         self.disp.image(img)
         self.disp.show()

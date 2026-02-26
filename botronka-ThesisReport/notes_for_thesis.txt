@@ -1,0 +1,56 @@
+Network Connectivity Integration and Troubleshooting
+Objective
+A reliable network link was required to (i) remotely administer the robot (SSH), (ii) support telemetry/log retrieval, and (iii) maintain continuous remote reachability via a mesh VPN (Tailscale). The target behavior was automatic Wi-Fi roaming: connect to the home network when available, otherwise fall back to the university eduroam network.
+Network stack and configuration
+The robot ran Debian on Raspberry Pi with NetworkManager as the Wi-Fi manager and netplan as the declarative configuration layer (renderer: NetworkManager). Two Wi-Fi profiles were created:
+Home WPA2-PSK network (primary, higher autoconnect priority)
+eduroam (WPA2-Enterprise / WPA-EAP) installed using the official eduroam CAT installer, which generated a NetworkManager connection file at:
+/etc/NetworkManager/system-connections/eduroam.nmconnection
+The eduroam profile used PEAP + MSCHAPv2, and included CA certificate validation and server identity constraints (CA cert path and altsubject_match for radius.polsl.pl).
+Failure symptoms observed
+Loss of remote access (critical):
+Tailscale reported the robot as offline and SSH to the Tailscale IP timed out.
+This indicated the robot had lost general internet connectivity (Tailscale cannot remain online without an active uplink).
+eduroam connection instability:
+NetworkManager logs showed repeated association attempts followed by disconnects.
+
+
+In several attempts, the system reported that “secrets were required” and later requested new secrets, but failed because the robot had no interactive secret agent (headless operation).
+Netplan warnings and configuration refusal:
+netplan generate/apply repeatedly emitted:
+“Netplan configuration should NOT be accessible by others”
+The warning pointed to files under /lib/netplan/, which netplan validates for security.
+During the incident, two netplan files under /etc/netplan/ were found to be zero-byte (empty), effectively corrupting the active network configuration.
+Root cause analysis
+The outage was caused by a combination of configuration integrity and security enforcement issues:
+Configuration corruption: netplan YAML files in /etc/netplan/ became empty (0 bytes), removing the effective Wi-Fi configuration and preventing reliable connection establishment.
+Strict netplan permission checks: netplan rejected or warned about configuration files being “too open”, specifically /lib/netplan/00-network-manager-all.yaml (and a placeholder file). Even when file mode appeared correct, netplan still enforced stricter constraints, and until resolved, network application remained unstable.
+Headless enterprise Wi-Fi constraints: in the eduroam workflow, any condition that triggers a request for credentials (e.g., authentication failure, re-prompt) fails on a headless robot if secrets are not fully stored and usable non-interactively.
+Corrective actions implemented
+Restored a known-good Wi-Fi baseline
+Removed corrupted netplan stubs and recreated a clean netplan Wi-Fi configuration for the home SSID to immediately restore internet access.
+Fixed netplan security/perms enforcement
+Tightened ownership and permissions of all netplan files that were flagged (including those in /lib/netplan/) to satisfy netplan’s security checks.
+After permissions were corrected, netplan generate and netplan apply executed reliably again.
+Restarted and reinitialized NetworkManager
+NetworkManager was restarted to reload corrected netplan inputs and rebuild runtime state, restoring normal Wi-Fi behavior.
+Once the robot regained internet access, Tailscale reconnected, restoring remote SSH.
+Validated and prepared enterprise Wi-Fi (eduroam)
+Confirmed the eduroam profile existed under NetworkManager system connections and contained the expected EAP, CA certificate, and identity parameters.
+Adopted a validation procedure based on forcing the eduroam connection and inspecting NetworkManager and wpa_supplicant logs to identify whether failure was due to password, certificate/time validation, or EAP negotiation.
+Added a practical fallback strategy
+When campus enterprise connectivity was unreliable, a phone hotspot fallback was prepared as an operational mitigation for field debugging and recovery.
+Power-related considerations
+Because the robot may be powered directly via the 5V GPIO pin (instead of USB-C power negotiation), network stability was also evaluated from a hardware perspective. Wi-Fi remains fully functional when powered from GPIO 5V as long as supply stability is ensured. Undervoltage or brownouts can cause intermittent Wi-Fi drops and service instability. A verification step (vcgencmd get_throttled) was added to detect undervoltage events during operation.
+Outcome and lessons learned
+Stable Wi-Fi and remote access were restored by repairing netplan configuration integrity and satisfying netplan permission requirements.
+Enterprise Wi-Fi on a headless robot requires credentials and certificates to be configured in a way that never relies on interactive prompting, and failures must be diagnosed using lower-level logs (NetworkManager + wpa_supplicant).
+For a mobile robotics platform, a robust recovery path (hotspot fallback) and power stability checks are essential to maintain remote maintainability during development and deployment.
+
+
+
+
+
+For STT model
+https://github.com/ggml-org/whisper.cpp/blob/master/models/README.md?utm_source=chatgpt.com
+

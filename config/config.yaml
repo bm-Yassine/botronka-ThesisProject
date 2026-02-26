@@ -19,7 +19,8 @@ camera:
 vision:
   width: 640
   height: 480
-  recognition_fps: 5
+  recognition_fps: 2
+  presence_hold_s: 5.0
   match_threshold: 0.60
   stable_k: 3
   stable_window: 5
@@ -27,9 +28,121 @@ vision:
   detector_score_threshold: 0.80
   detector_nms_threshold: 0.30
   reload_every_s: 2.0
+  enroll_samples: 3
+  enroll_max_attempts: 12
+  enroll_interval_s: 0.25
+  captures_dir: data/people/captures
 
 behavior:
   lonely_after_s: 12
   stuck_distance_cm: 18
   stuck_after_s: 2.5
   face_check_hz: 4
+
+audio_io:
+  utterance_dir: /tmp/botfriend_audio
+  mic_device: null
+  poll_interval_s: 0.15
+  greeting_idle_s: 20.0
+  greeting_delay_s: 0.8
+  greeting_min_open_s: 2.0
+  greeting_known_template: "Greetings {name}."
+  greeting_unknown_text: "Hi, who are you?"
+  listen_cooldown_s: 0.2
+
+vad:
+  sample_rate: 16000
+  frame_ms: 30
+  aggressiveness: 2
+  silence_ms: 700
+  min_speech_ms: 250
+  min_open_s: 2.0
+  pre_roll_ms: 180
+  max_record_s: 5.0
+
+stt:
+  whisper_bin: /home/botronka/whisper.cpp/build/bin/whisper-cli
+  model_path: /home/botronka/botfriend/models/stt/ggml-small.en.bin
+  language: en
+  threads: 3
+  max_context: 1024
+  timeout_s: 120
+
+stt_worker:
+  min_text_chars: 2
+  delete_wav_after_stt: true
+
+llm:
+  url: http://127.0.0.1:8080/v1/chat/completions
+  model: local
+  timeout_s: 30
+  temperature: 0.15
+  max_tokens: 120
+
+agent:
+  min_move_trust: 2
+  owner_trust_level: 3
+  face_db_path: /home/botronka/botfriend/data/people/face_db.json
+  trust_map_path: /home/botronka/botfriend/data/people/trust_map.json
+  use_few_shot: false
+  register_timeout_s: 18.0
+  register_countdown_steps: 3
+  register_countdown_interval_s: 0.6
+  system_prompt: >-
+    You are Botronka, a tiny helpful ladybug robot (biedronka) companion.
+    Personality: warm, brave, practical, and concise.
+    For normal chat, sound like a friendly little ladybug helper.
+    Answer accurately from what you know; if unsure, say so briefly.
+    Reply with JSON only and no markdown.
+    Schema: {"type":"chat|command","speak":"string","command":"string|null","requires_trust":0-3}.
+    If user asks robot movement, set type=command and command to concise instruction.
+    If no movement/action needed, command must be null and type=chat.
+    The speak field must be short and natural.
+  enable_filler_speech: false
+  filler_phrases:
+    - Working on it.
+    - Let me think.
+    - Hmm, gotcha.
+
+tts:
+  piper_bin: piper
+  model_path: /home/botronka/botfriend/models/tts/en_US-lessac-medium.onnx
+  model_config_path: /home/botronka/botfriend/models/tts/en_US-lessac-medium.onnx.json
+  sample_rate: 22050
+  aplay_bin: aplay
+  cache_dir: /tmp/botfriend_tts
+
+tts_worker:
+  pre_generate_phrases:
+    - Greetings.
+    - Hi, who are you?
+    - Working on it.
+    - Let me think.
+    - Hmm, gotcha.
+
+motion:
+  # L298N wheels (direction-only: ENA/ENB tied high)
+  wheel_in1: 5
+  wheel_in2: 6
+  wheel_in3: 13
+  wheel_in4: 19
+
+  # L9110S steppers (both boards driven together)
+  stepper_ia1: 12
+  stepper_ia2: 20
+  stepper_ib1: 16
+  stepper_ib2: 21
+  stepper_invert: false
+  stepper_steps_per_90deg: 50
+  stepper_step_delay_s: 0.01
+
+  move_duration_s: 0.8
+  turn_duration_s: 0.6
+  loop_sleep_s: 0.05
+
+  # Follow keeps initial/target distance by pulsing forward/backward.
+  follow_tolerance_cm: 5.0
+  follow_pulse_s: 0.5
+  follow_replan_interval_s: 0.5
+
+  dry_run: false

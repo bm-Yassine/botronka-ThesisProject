@@ -23,8 +23,6 @@ class BaseThread:
     def run(self) -> None:
         while self.running:
             time.sleep(1.0)  # Keep thread alive
-        if self.thread is not None:
-            self.thread.join()
 
     def handle_message(self, message: Message):
         pass

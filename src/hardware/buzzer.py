@@ -36,3 +36,8 @@ class Buzzer:
         for _ in range(6):
             self.chirp(0.03)
             time.sleep(0.03)
+
+    def pattern_countdown(self, steps: int = 3, interval_s: float = 0.6):
+        for _ in range(max(1, steps)):
+            self.chirp(0.09)
+            time.sleep(max(0.05, interval_s))

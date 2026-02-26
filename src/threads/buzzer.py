@@ -25,6 +25,21 @@ class BuzzerThread(BaseThread):
 
         if message.type == "distance_cm":
             distance = json.loads(message.content).get("value")
-            if isinstance(distance, (int, float)) and distance < 20:
+            if isinstance(distance, (int, float)) and distance < 15:
                 logging.info(f"Distance {distance} cm is too close, activating buzzer.")
-                self.buzzer.pattern_too_close()
+                self.broadcast_message("buzzer_state", json.dumps({"active": True}))
+                try:
+                    self.buzzer.pattern_too_close()
+                finally:
+                    self.broadcast_message("buzzer_state", json.dumps({"active": False}))
+
+        elif message.type == "buzzer_countdown":
+            payload = json.loads(message.content)
+            steps = int(payload.get("steps", 3))
+            interval_s = float(payload.get("interval_s", 0.6))
+            logging.info("Buzzer countdown: steps=%s interval=%s", steps, interval_s)
+            self.broadcast_message("buzzer_state", json.dumps({"active": True}))
+            try:
+                self.buzzer.pattern_countdown(steps=steps, interval_s=interval_s)
+            finally:
+                self.broadcast_message("buzzer_state", json.dumps({"active": False}))
