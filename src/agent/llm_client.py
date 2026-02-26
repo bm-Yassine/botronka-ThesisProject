@@ -9,6 +9,14 @@ import requests
 _SESSION = requests.Session()
 
 
+
+""" # Run Lighter model for lower latency or comparaison 
+~/llama.cpp/build/bin/llama-server \
+  -m ~/botfriend/models/llm/qwen2.5-0.5b-instruct-q4_k_m.gguf \
+  --host 127.0.0.1 --port 8080 \
+  -c 1024
+"""
+
 @dataclass
 class LLMConfig:
     url: str = "http://127.0.0.1:8080/v1/chat/completions"

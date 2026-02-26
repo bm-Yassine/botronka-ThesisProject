@@ -13,6 +13,8 @@ from src.threads.baseThread import BaseThread
 
 @dataclass
 class TTSWorkerConfig:
+    startup_announcement_enabled: bool = True
+    startup_announcement_text: str = "Botronka is waking up"
     pre_generate_phrases: list[str] = field(
         default_factory=lambda: [
             "Hi, who are you?",
@@ -37,7 +39,15 @@ class TTSWorker(BaseThread):
 
         # Warm cache for common short phrases to reduce perceived latency.
         try:
-            self.tts.pre_generate(self.config.pre_generate_phrases)
+            warm_phrases = list(self.config.pre_generate_phrases)
+            startup_text = self.config.startup_announcement_text.strip()
+            if (
+                self.config.startup_announcement_enabled
+                and startup_text
+                and startup_text not in warm_phrases
+            ):
+                warm_phrases.append(startup_text)
+            self.tts.pre_generate(warm_phrases)
         except Exception:
             logging.exception("TTS pre-generate failed during startup")
 
@@ -45,7 +55,67 @@ class TTSWorker(BaseThread):
         if message.type == "tts_request":
             self._inbox.put(message)
 
+    def _speak_payload(self, payload: dict):
+        text = str(payload.get("text", "")).strip()
+        if not text:
+            return
+
+        self.broadcast_message(
+            "tts_started",
+            json.dumps(
+                {
+                    "ts": time.time(),
+                    "text": text,
+                    "is_filler": bool(payload.get("is_filler", False)),
+                    "is_startup": bool(payload.get("is_startup", False)),
+                },
+                ensure_ascii=False,
+            ),
+        )
+
+        self.tts.speak(text)
+
+        self.broadcast_message(
+            "tts_finished",
+            json.dumps(
+                {
+                    "ts": time.time(),
+                    "text": text,
+                    "is_filler": bool(payload.get("is_filler", False)),
+                    "is_startup": bool(payload.get("is_startup", False)),
+                    "command": payload.get("command"),
+                },
+                ensure_ascii=False,
+            ),
+        )
+
     def run(self):
+        if self.config.startup_announcement_enabled:
+            startup_text = self.config.startup_announcement_text.strip()
+            if startup_text:
+                try:
+                    self._speak_payload(
+                        {
+                            "text": startup_text,
+                            "is_filler": False,
+                            "is_startup": True,
+                        }
+                    )
+                except Exception as e:
+                    logging.exception("TTS startup announcement failed")
+                    self.broadcast_message(
+                        "tts_error",
+                        json.dumps(
+                            {
+                                "error": str(e),
+                                "text": startup_text,
+                                "payload": {"is_startup": True},
+                                "ts": time.time(),
+                            },
+                            ensure_ascii=False,
+                        ),
+                    )
+
         while self.running:
             try:
                 message = self._inbox.get(timeout=0.1)
@@ -59,33 +129,7 @@ class TTSWorker(BaseThread):
                 text = str(payload.get("text", "")).strip()
                 if not text:
                     continue
-
-                self.broadcast_message(
-                    "tts_started",
-                    json.dumps(
-                        {
-                            "ts": time.time(),
-                            "text": text,
-                            "is_filler": bool(payload.get("is_filler", False)),
-                        },
-                        ensure_ascii=False,
-                    ),
-                )
-
-                self.tts.speak(text)
-
-                self.broadcast_message(
-                    "tts_finished",
-                    json.dumps(
-                        {
-                            "ts": time.time(),
-                            "text": text,
-                            "is_filler": bool(payload.get("is_filler", False)),
-                            "command": payload.get("command"),
-                        },
-                        ensure_ascii=False,
-                    ),
-                )
+                self._speak_payload(payload)
             except Exception as e:
                 logging.exception("TTS worker failed")
                 self.broadcast_message(

@@ -4,6 +4,19 @@ oled:
   width: 128
   height: 64
 
+autostart:
+  # If true, bot starts when launched by systemd boot service.
+  # Set to false to keep service installed but skip app startup at boot.
+  enabled: true
+  # Start local llama.cpp server before running main.py
+  start_llm_server: true
+  llm_server_bin: /home/botronka/llama.cpp/build/bin/llama-server
+  llm_model_path: /home/botronka/botfriend/models/llm/qwen2.5-0.5b-instruct-q4_k_m.gguf
+  llm_host: 127.0.0.1
+  llm_port: 8080
+  llm_ctx_size: 1024
+  llm_startup_timeout_s: 20
+
 buzzer:
   pin: 17
 
@@ -113,7 +126,10 @@ tts:
   cache_dir: /tmp/botfriend_tts
 
 tts_worker:
+  startup_announcement_enabled: true
+  startup_announcement_text: "Botronka is waking up"
   pre_generate_phrases:
+    - Botronka is waking up
     - Greetings.
     - Hi, who are you?
     - Working on it.

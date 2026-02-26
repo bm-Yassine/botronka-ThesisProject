@@ -1,0 +1,18 @@
+[Unit]
+Description=Botronka BotFriend Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=botronka
+Group=botronka
+WorkingDirectory=/home/botronka/botfriend
+Environment=PYTHONUNBUFFERED=1
+Environment=BOTFRIEND_BOOT_MODE=1
+ExecStart=/home/botronka/botfriend/scripts/botfriend_boot.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

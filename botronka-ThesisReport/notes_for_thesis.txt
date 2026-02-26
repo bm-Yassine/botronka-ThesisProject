@@ -54,3 +54,25 @@ For a mobile robotics platform, a robust recovery path (hotspot fallback) and po
 For STT model
 https://github.com/ggml-org/whisper.cpp/blob/master/models/README.md?utm_source=chatgpt.com
 
+used llama Qwen as llm 
+
+tts model : en-lessac
+
+
+#connection maps for GPIOS and hardware :
+Batteries -> switch On/Off -v> 12v -> Motor controllers      
+                            -> 5v -> Raspberrypi 5 8gb
+Pi power pins -v> 5v -> Ultrasound Sensor, Buzzer
+               -> 3.3v -> OLED display
+Pi GPIO pins -v> SDA1, SCL1 -> OLED display
+              -v> GPIO17 + transistor -> Buzzer  
+               -v> GPIO23 + voltage divider , GPIO24 -> Ultrasound Echo and Trig pins
+                -v> GPIO 12,16,20,21 -> Step motors for rotating wheels
+                 -v> GPIO 5,6,13,19 -> DC motors for movement.
+Pi camera port -> Noir pi camera 2
+Pi USB Port -> USB Audio dongle -> Speakers + Microphone       
+
+Batteries : 3 cell lithium battery, charge time 1h~ from 10v to 12.5v
+
+Rover legs are uplifted and rotatable around the main platform to be able to go over rocks without pivoting it.
+all the platform pieces were 3d printed.
