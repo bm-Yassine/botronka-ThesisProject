@@ -9,7 +9,7 @@ It is built around a thread-based architecture where worker threads publish and 
 
 - Detects and identifies faces from camera input
 - Tracks trust levels for known/unknown people
-- Allow Owner to rejister new people
+- Allow Owner to register new people
 - Records speech with VAD and transcribes it (STT)
 - Uses an LLM to decide replies and actions
 - Speaks responses with TTS
@@ -86,6 +86,10 @@ src/
 config/config.yaml        # Main runtime config
 data/people/              # Face DB + trust map
 tests/                    # Unit/integration/tools
+logs/                     # Some testing logs
+scripts/                  # Automation bash scripts
+botronka-ThesisReport/    # Tex files for the thesis report
+
 ```
 
 ---
@@ -238,7 +242,7 @@ flowchart TD
     PI -->|SDA1 + SCL1| OLED
     PI -->|GPIO17| BZ
     PI -->|GPIO24 Trig| US
-    PI -->|GPIO23 Echo (via voltage divider)| US
+    PI -->|GPIO23 Echo via voltage divider| US
 
     PI -->|GPIO12,16,20,21| STEP[Stepper motors / steering]
     PI -->|GPIO5,6,13,19| DC[DC motors / drive]
