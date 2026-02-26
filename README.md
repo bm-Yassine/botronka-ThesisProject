@@ -247,8 +247,7 @@ flowchart TD
     PI -->|GPIO12,16,20,21| STEP[Stepper motors / steering]
     PI -->|GPIO5,6,13,19| DC[DC motors / drive]
 
-    PICAM[Pi Camera Port] --> CAM[NoIR Pi Camera v2]
-    PI --> PICAM
+    PI -->|PICAMPort| CAM[NoIR Pi Camera v2]
 
     PI -->|USB Audio Dongle| AUD[Speakers + Microphone]
 ```
